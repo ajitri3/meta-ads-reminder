@@ -2,9 +2,8 @@ name: Meta Ads Reminder
 
 on:
   workflow_dispatch:
-
   schedule:
-    - cron: '0 0 * * *'   # jam 07:00 WIB
+    - cron: '0 0 * * *'  # Jam 7 pagi WIB (UTC 00:00)
 
 jobs:
   run-script:
@@ -16,14 +15,17 @@ jobs:
 
       - name: Setup Python
         uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Check Python version
+        run: python --version
 
       - name: Install requests
         run: pip install requests
 
       - name: Run script
+        run: python check_balance.py
         env:
-          META_TOKEN: ${{ secrets.META_TOKEN }}
-          AD_ACCOUNT_ID: ${{ secrets.AD_ACCOUNT_ID }}
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
-        run: python check_balance.py
