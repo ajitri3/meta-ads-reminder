@@ -12,8 +12,8 @@ def get_campaign_data():
     url = f"https://graph.facebook.com/v18.0/{AD_ACCOUNT_ID}/insights"
 
     params = {
-        "fields": "campaign_name,reach,impressions,cpc,ctr,spend,cost_per_result",
-        "date_preset": "today",
+        "fields": "campaign_name,reach,impressions,cpc,ctr,spend",
+        "date_preset": "today",  # REALTIME HARI INI
         "level": "campaign",
         "access_token": ACCESS_TOKEN
     }
@@ -28,25 +28,39 @@ def get_campaign_data():
 
 
 def format_report(data):
-    msg = "📊 Laporan Meta Ads Hari Ini\n\n"
+    if len(data) == 0:
+        return "⚠️ Tidak ada data campaign hari ini (belum ada spend)"
+
+    total_spend = 0
+    total_reach = 0
+    total_impressions = 0
+
+    msg = "📊 REALTIME META ADS (HARI INI)\n\n"
 
     for camp in data:
         name = camp.get("campaign_name", "-")
         spend = float(camp.get("spend", 0))
-        reach = camp.get("reach", 0)
-        impressions = camp.get("impressions", 0)
+        reach = int(camp.get("reach", 0))
+        impressions = int(camp.get("impressions", 0))
         cpc = float(camp.get("cpc", 0))
         ctr = float(camp.get("ctr", 0))
-        cpr = float(camp.get("cost_per_result", 0))
 
-        msg += f"Campaign: {name}\n"
+        total_spend += spend
+        total_reach += reach
+        total_impressions += impressions
+
+        msg += f"🚀 {name}\n"
         msg += f"💰 Spend: Rp{spend:,.0f}\n"
-        msg += f"👁 Reach: {reach}\n"
-        msg += f"📊 Impressions: {impressions}\n"
+        msg += f"👁 Reach: {reach:,}\n"
+        msg += f"📊 Impressions: {impressions:,}\n"
         msg += f"🖱 CPC: Rp{cpc:,.0f}\n"
         msg += f"📈 CTR: {ctr}%\n"
-        msg += f"🎯 CPR: Rp{cpr:,.0f}\n"
-        msg += "------------------------\n"
+        msg += "----------------------\n"
+
+    msg += "\n📌 TOTAL\n"
+    msg += f"💰 Total Spend: Rp{total_spend:,.0f}\n"
+    msg += f"👁 Total Reach: {total_reach:,}\n"
+    msg += f"📊 Total Impressions: {total_impressions:,}\n"
 
     return msg
 
