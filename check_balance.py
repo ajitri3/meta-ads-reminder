@@ -1,6 +1,6 @@
 import requests
 import os
-
+print("AD_ACCOUNT_ID:", AD_ACCOUNT_ID)
 ACCESS_TOKEN = os.getenv("META_TOKEN")
 AD_ACCOUNT_ID = os.getenv("AD_ACCOUNT_ID")
 
