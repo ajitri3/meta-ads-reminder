@@ -1,33 +1,83 @@
 import requests
 import os
 
-def main():
-    TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-    CHAT_ID = os.getenv("CHAT_ID")
+ACCESS_TOKEN = os.getenv("META_TOKEN")
+AD_ACCOUNT_ID = os.getenv("AD_ACCOUNT_ID")
 
-    print("TOKEN:", TELEGRAM_TOKEN)
-    print("CHAT_ID:", CHAT_ID)
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")
 
-    if not TELEGRAM_TOKEN or not CHAT_ID:
-        raise Exception("TOKEN / CHAT_ID kosong")
 
-    # ✅ URL WAJIB ADA TOKEN
+def get_insights():
+    url = f"https://graph.facebook.com/v18.0/{AD_ACCOUNT_ID}/insights"
+
+    params = {
+        "fields": "campaign_name,reach,impressions,ctr,cpc,cost_per_result",
+        "access_token": ACCESS_TOKEN,
+        "date_preset": "today"
+    }
+
+    res = requests.get(url, params=params).json()
+
+    print("META RESPONSE:", res)
+
+    if "data" not in res:
+        raise Exception("Gagal ambil data Meta")
+
+    return res["data"]
+
+
+def get_balance():
+    url = f"https://graph.facebook.com/v18.0/{AD_ACCOUNT_ID}"
+
+    params = {
+        "fields": "balance",
+        "access_token": ACCESS_TOKEN
+    }
+
+    res = requests.get(url, params=params).json()
+
+    print("BALANCE RESPONSE:", res)
+
+    if "balance" not in res:
+        return 0
+
+    return int(res["balance"]) / 100
+
+
+def format_report(data, balance):
+    text = f"📊 META ADS REPORT\n\n💰 Saldo: Rp{balance:,.0f}\n\n"
+
+    for item in data[:5]:  # ambil max 5 campaign
+        text += f"📌 {item.get('campaign_name','-')}\n"
+        text += f"Reach: {item.get('reach','-')}\n"
+        text += f"Impression: {item.get('impressions','-')}\n"
+        text += f"CTR: {item.get('ctr','-')}%\n"
+        text += f"CPC: Rp{item.get('cpc','-')}\n"
+        text += f"Cost/Result: Rp{item.get('cost_per_result','-')}\n\n"
+
+    return text
+
+
+def send_telegram(msg):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-
-    print("URL:", url)  # debug penting
 
     data = {
         "chat_id": CHAT_ID,
-        "text": "🔥 TEST FIX — HARUS MASUK!"
+        "text": msg
     }
 
-    res = requests.post(url, data=data)
+    requests.post(url, data=data)
 
-    print("STATUS:", res.status_code)
-    print("RESPONSE:", res.text)
 
-    if res.status_code != 200:
-        raise Exception("Gagal kirim Telegram")
+def main():
+    insights = get_insights()
+    balance = get_balance()
+
+    report = format_report(insights, balance)
+
+    send_telegram(report)
+
 
 if __name__ == "__main__":
     main()
