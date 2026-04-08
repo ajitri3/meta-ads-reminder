@@ -1,8 +1,6 @@
 import requests
 import os
 
-print("🚀 META REPORT RUNNING...")
-
 ACCESS_TOKEN = os.getenv("META_TOKEN")
 AD_ACCOUNT_ID = os.getenv("AD_ACCOUNT_ID")
 
@@ -10,17 +8,23 @@ TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
 
+def format_rp(value):
+    try:
+        return f"Rp{int(float(value)):,}".replace(",", ".")
+    except:
+        return "Rp0"
+
+
 def get_insights():
     url = f"https://graph.facebook.com/v18.0/{AD_ACCOUNT_ID}/insights"
 
     params = {
-        "fields": "campaign_name,reach,impressions,ctr,cpc,spend",
+        "fields": "campaign_name,reach,impressions,ctr,cpc,spend,purchase_roas",
         "access_token": ACCESS_TOKEN,
         "date_preset": "today"
     }
 
     res = requests.get(url, params=params).json()
-
     print("META RESPONSE:", res)
 
     return res.get("data", [])
@@ -35,7 +39,6 @@ def get_balance():
     }
 
     res = requests.get(url, params=params).json()
-
     print("BALANCE RESPONSE:", res)
 
     if "balance" not in res:
@@ -46,18 +49,28 @@ def get_balance():
 
 def format_report(data, balance):
     text = f"📊 META ADS REPORT HARI INI\n\n"
-    text += f"💰 Saldo: Rp{balance:,.0f}\n\n"
+    text += f"🏢 Account: {AD_ACCOUNT_ID}\n"
+    text += f"💰 Saldo: {format_rp(balance)}\n\n"
 
     if not data:
         return text + "⚠️ Tidak ada data campaign"
 
     for item in data[:5]:
+        ctr = float(item.get("ctr", 0))
+        cpc = item.get("cpc", 0)
+        spend = item.get("spend", 0)
+
+        purchase = "-"
+        if "purchase_roas" in item and item["purchase_roas"]:
+            purchase = item["purchase_roas"][0].get("value", "-")
+
         text += f"📌 {item.get('campaign_name','-')}\n"
         text += f"Reach: {item.get('reach','-')}\n"
         text += f"Impression: {item.get('impressions','-')}\n"
-        text += f"CTR: {item.get('ctr','-')}%\n"
-        text += f"CPC: Rp{item.get('cpc','-')}\n"
-        text += f"Spend: Rp{item.get('spend','-')}\n\n"
+        text += f"CTR: {ctr:.2f}%\n"
+        text += f"CPC: {format_rp(cpc)}\n"
+        text += f"Spend: {format_rp(spend)}\n"
+        text += f"Purchase: {purchase}\n\n"
 
     return text
 
@@ -71,26 +84,15 @@ def send_telegram(msg):
     }
 
     res = requests.post(url, data=data)
-
-    print("TELEGRAM STATUS:", res.status_code)
-    print("TELEGRAM RESPONSE:", res.text)
+    print("TELEGRAM:", res.text)
 
 
 def main():
-    if not ACCESS_TOKEN or not AD_ACCOUNT_ID:
-        print("❌ META TOKEN / AD ACCOUNT ID KOSONG")
-        return
-
-    if not TELEGRAM_TOKEN or not CHAT_ID:
-        print("❌ TELEGRAM TOKEN / CHAT ID KOSONG")
-        return
-
     insights = get_insights()
     balance = get_balance()
 
     report = format_report(insights, balance)
-
-    print("FINAL REPORT:\n", report)
+    print(report)
 
     send_telegram(report)
 
