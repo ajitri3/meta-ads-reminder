@@ -19,7 +19,7 @@ def get_insights():
     url = f"https://graph.facebook.com/v18.0/{AD_ACCOUNT_ID}/insights"
 
     params = {
-        "fields": "campaign_name,reach,impressions,ctr,cpc,spend,purchase_roas",
+        "fields": "campaign_name,reach,impressions,ctr,cpc,spend,purchase_roas,actions,action_values",
         "access_token": ACCESS_TOKEN,
         "date_preset": "today"
     }
@@ -47,6 +47,41 @@ def get_balance():
     return int(res["balance"]) / 100
 
 
+def extract_value(data_list, key):
+    if not data_list:
+        return 0
+
+    for item in data_list:
+        if item.get("action_type") == key:
+            return float(item.get("value", 0))
+
+    return 0
+
+
+# 🔥 CPAS PRIORITY + fallback
+def get_purchase(actions):
+    return (
+        extract_value(actions, "omni_purchase") or
+        extract_value(actions, "purchase")
+    )
+
+
+def get_purchase_value(values):
+    return (
+        extract_value(values, "omni_purchase") or
+        extract_value(values, "purchase")
+    )
+
+
+def get_roas(item):
+    if item.get("purchase_roas"):
+        try:
+            return float(item["purchase_roas"][0].get("value", 0))
+        except:
+            return 0
+    return 0
+
+
 def format_report(data, balance):
     text = f"📊 META ADS REPORT HARI INI\n\n"
     text += f"🏢 Account: {AD_ACCOUNT_ID}\n"
@@ -55,14 +90,22 @@ def format_report(data, balance):
     if not data:
         return text + "⚠️ Tidak ada data campaign"
 
+    total_spend = 0
+    total_purchase = 0
+    total_revenue = 0
+
     for item in data[:5]:
         ctr = float(item.get("ctr", 0))
         cpc = item.get("cpc", 0)
-        spend = item.get("spend", 0)
+        spend = float(item.get("spend", 0))
 
-        purchase = "-"
-        if "purchase_roas" in item and item["purchase_roas"]:
-            purchase = item["purchase_roas"][0].get("value", "-")
+        purchase = get_purchase(item.get("actions"))
+        purchase_value = get_purchase_value(item.get("action_values"))
+        roas = get_roas(item)
+
+        total_spend += spend
+        total_purchase += purchase
+        total_revenue += purchase_value
 
         text += f"📌 {item.get('campaign_name','-')}\n"
         text += f"Reach: {item.get('reach','-')}\n"
@@ -70,7 +113,18 @@ def format_report(data, balance):
         text += f"CTR: {ctr:.2f}%\n"
         text += f"CPC: {format_rp(cpc)}\n"
         text += f"Spend: {format_rp(spend)}\n"
-        text += f"Purchase: {purchase}\n\n"
+        text += f"Purchase: {int(purchase)}\n"
+        text += f"Revenue: {format_rp(purchase_value)}\n"
+        text += f"ROAS: {roas:.2f}\n\n"
+
+    # 🔥 SUMMARY TOTAL
+    total_roas = total_revenue / total_spend if total_spend > 0 else 0
+
+    text += f"========== TOTAL ==========\n"
+    text += f"Spend: {format_rp(total_spend)}\n"
+    text += f"Purchase: {int(total_purchase)}\n"
+    text += f"Revenue: {format_rp(total_revenue)}\n"
+    text += f"ROAS: {total_roas:.2f}\n"
 
     return text
 
