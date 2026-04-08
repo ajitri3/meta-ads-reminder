@@ -25,7 +25,26 @@ def get_account_name():
     res = requests.get(url, params=params).json()
     print("ACCOUNT RESPONSE:", res)
 
-    return res.get("name", "Unknown Account")
+    if "error" in res:
+        return AD_ACCOUNT_ID
+
+    return res.get("name", AD_ACCOUNT_ID)
+
+
+def get_balance():
+    url = f"https://graph.facebook.com/v18.0/{AD_ACCOUNT_ID}"
+    params = {
+        "fields": "balance",
+        "access_token": ACCESS_TOKEN
+    }
+
+    res = requests.get(url, params=params).json()
+    print("BALANCE RESPONSE:", res)
+
+    if "error" in res:
+        return 0
+
+    return int(res.get("balance", 0)) / 100
 
 
 def get_insights():
@@ -41,22 +60,6 @@ def get_insights():
     print("META RESPONSE:", res)
 
     return res.get("data", [])
-
-
-def get_balance():
-    url = f"https://graph.facebook.com/v18.0/{AD_ACCOUNT_ID}"
-    params = {
-        "fields": "balance",
-        "access_token": ACCESS_TOKEN
-    }
-
-    res = requests.get(url, params=params).json()
-    print("BALANCE RESPONSE:", res)
-
-    if "balance" not in res:
-        return 0
-
-    return int(res["balance"]) / 100
 
 
 def get_purchase(actions):
@@ -83,13 +86,9 @@ def get_purchase_value(action_values):
     return total
 
 
-def get_roas(item):
-    spend = float(item.get("spend") or 0)
-    revenue = get_purchase_value(item.get("action_values"))
-
+def get_roas(spend, revenue):
     if spend == 0:
         return 0
-
     return revenue / spend
 
 
@@ -106,18 +105,13 @@ def format_report(data, balance, account_name):
     total_revenue = 0
 
     for item in data[:5]:
-        try:
-            ctr = float(item.get("ctr") or 0)
-            cpc = float(item.get("cpc") or 0)
-            spend = float(item.get("spend") or 0)
+        ctr = float(item.get("ctr") or 0)
+        cpc = float(item.get("cpc") or 0)
+        spend = float(item.get("spend") or 0)
 
-            purchase = get_purchase(item.get("actions"))
-            revenue = get_purchase_value(item.get("action_values"))
-            roas = get_roas(item)
-
-        except Exception as e:
-            print("ERROR ITEM:", e)
-            continue
+        purchase = get_purchase(item.get("actions"))
+        revenue = get_purchase_value(item.get("action_values"))
+        roas = get_roas(spend, revenue)
 
         total_spend += spend
         total_purchase += purchase
@@ -133,7 +127,7 @@ def format_report(data, balance, account_name):
         text += f"💵 Revenue: {format_rp(revenue)}\n"
         text += f"📈 ROAS: {roas:.2f}\n\n"
 
-    total_roas = total_revenue / total_spend if total_spend > 0 else 0
+    total_roas = get_roas(total_spend, total_revenue)
 
     text += f"========== TOTAL ==========\n"
     text += f"Spend: {format_rp(total_spend)}\n"
@@ -161,17 +155,15 @@ def send_telegram(msg):
 def main():
     print("SCRIPT START")
 
-    insights = get_insights()
-    print("INSIGHTS:", insights)
-
-    balance = get_balance()
-    print("BALANCE:", balance)
+    print("AD_ACCOUNT_ID:", AD_ACCOUNT_ID)
 
     account_name = get_account_name()
-    print("ACCOUNT:", account_name)
+    balance = get_balance()
+    insights = get_insights()
 
     report = format_report(insights, balance, account_name)
-    print("REPORT:", report)
+
+    print("FINAL REPORT:", report)
 
     send_telegram(report)
 
