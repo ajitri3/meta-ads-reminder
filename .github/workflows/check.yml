@@ -1,21 +1,29 @@
 name: Meta Ads Reminder
 
 on:
-  schedule:
-    - cron: "0 * * * *"
   workflow_dispatch:
 
 jobs:
   run:
     runs-on: ubuntu-latest
 
+    env:
+      META_TOKEN: ${{ secrets.META_TOKEN }}
+      AD_ACCOUNT_ID: ${{ secrets.AD_ACCOUNT_ID }}
+      TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+      CHAT_ID: ${{ secrets.CHAT_ID }}
+
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v3
 
-      - uses: actions/setup-python@v4
+      - name: Setup Python
+        uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: '3.10'
 
-      - run: pip install -r requirements.txt
+      - name: Install requests
+        run: pip install requests
 
-      - run: python check_balance.py
+      - name: Run script
+        run: python check_balance.py
