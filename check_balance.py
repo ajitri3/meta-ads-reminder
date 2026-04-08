@@ -3,7 +3,6 @@ import os
 
 ACCESS_TOKEN = os.getenv("META_TOKEN")
 AD_ACCOUNT_ID = os.getenv("AD_ACCOUNT_ID")
-
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
@@ -17,10 +16,10 @@ def get_balance():
     }
 
     res = requests.get(url, params=params).json()
+    print("META RESPONSE:", res)
 
     if "balance" not in res:
-        print("ERROR RESPONSE:", res)
-        raise Exception("Balance not found")
+        raise Exception(f"Balance not found: {res}")
 
     return int(res["balance"]) / 100
 
@@ -31,15 +30,19 @@ def send_telegram(msg):
         "chat_id": CHAT_ID,
         "text": msg
     }
-    requests.post(url, data=data)
+
+    res = requests.post(url, data=data)
+    print("TELEGRAM RESPONSE:", res.text)
 
 
 def main():
-    balance = get_balance()
+    print("DEBUG TOKEN:", TELEGRAM_TOKEN)
+    print("DEBUG CHAT_ID:", CHAT_ID)
+    print("DEBUG AD_ACCOUNT_ID:", AD_ACCOUNT_ID)
 
+    balance = get_balance()
     print(f"Saldo sekarang: Rp{balance:,.0f}")
 
-    # kirim notif kalau di bawah threshold
     if balance < THRESHOLD:
         send_telegram(f"⚠️ Saldo Meta Ads tinggal Rp{balance:,.0f}")
     else:
