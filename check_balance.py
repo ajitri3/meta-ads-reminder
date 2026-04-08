@@ -16,7 +16,11 @@ def get_balance():
         "access_token": ACCESS_TOKEN
     }
     res = requests.get(url, params=params).json()
-    return int(res["balance"]) / 100
+    if "balance" not in res:
+    print("ERROR RESPONSE:", res)
+    raise Exception("Balance not found")
+
+return int(res["balance"]) / 100
 
 def send_telegram(msg):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
