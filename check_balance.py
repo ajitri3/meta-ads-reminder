@@ -8,11 +8,14 @@ def main():
     print("TOKEN:", TELEGRAM_TOKEN)
     print("CHAT_ID:", CHAT_ID)
 
+    if not TELEGRAM_TOKEN or not CHAT_ID:
+        raise Exception("TOKEN / CHAT_ID kosong")
+
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
 
     data = {
         "chat_id": CHAT_ID,
-        "text": "🔥 TEST BERHASIL — GitHub ke Telegram sudah nyambung!"
+        "text": "🔥 TEST GITHUB MASUK"
     }
 
     res = requests.post(url, data=data)
