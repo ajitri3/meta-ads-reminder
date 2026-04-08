@@ -47,30 +47,36 @@ def get_balance():
     return int(res["balance"]) / 100
 
 
-def extract_value(data_list, key):
+# 🔥 MULTI EVENT (ANTI META NGACO)
+def extract_value_multi(data_list, keys):
     if not data_list:
         return 0
 
-    for item in data_list:
-        if item.get("action_type") == key:
-            return float(item.get("value", 0))
+    for key in keys:
+        for item in data_list:
+            if item.get("action_type") == key:
+                return float(item.get("value", 0))
 
     return 0
 
 
-# 🔥 CPAS PRIORITY + fallback
+# 🔥 CPAS + WEBSITE SAFE
 def get_purchase(actions):
-    return (
-        extract_value(actions, "omni_purchase") or
-        extract_value(actions, "purchase")
-    )
+    return extract_value_multi(actions, [
+        "offsite_conversion.omni_purchase",
+        "omni_purchase",
+        "offsite_conversion.purchase",
+        "purchase"
+    ])
 
 
 def get_purchase_value(values):
-    return (
-        extract_value(values, "omni_purchase") or
-        extract_value(values, "purchase")
-    )
+    return extract_value_multi(values, [
+        "offsite_conversion.omni_purchase",
+        "omni_purchase",
+        "offsite_conversion.purchase",
+        "purchase"
+    ])
 
 
 def get_roas(item):
@@ -117,7 +123,7 @@ def format_report(data, balance):
         text += f"Revenue: {format_rp(purchase_value)}\n"
         text += f"ROAS: {roas:.2f}\n\n"
 
-    # 🔥 SUMMARY TOTAL
+    # 🔥 TOTAL
     total_roas = total_revenue / total_spend if total_spend > 0 else 0
 
     text += f"========== TOTAL ==========\n"
