@@ -19,7 +19,7 @@ def get_insights():
     url = f"https://graph.facebook.com/v18.0/{AD_ACCOUNT_ID}/insights"
 
     params = {
-        "fields": "campaign_name,reach,impressions,ctr,cpc,spend",
+        "fields": "campaign_name,reach,impressions,ctr,cpc,spend,actions",
         "access_token": ACCESS_TOKEN,
         "date_preset": "today"
     }
@@ -47,6 +47,21 @@ def get_balance():
     return int(res["balance"]) / 100
 
 
+# 🔥 SAFE PURCHASE (ANTI ERROR)
+def get_purchase(actions):
+    if not actions:
+        return "-"
+
+    for act in actions:
+        if act.get("action_type") == "purchase":
+            try:
+                return int(float(act.get("value", 0)))
+            except:
+                return "-"
+
+    return "-"
+
+
 def format_report(data, balance):
     text = f"📊 META ADS REPORT HARI INI\n\n"
     text += f"🏢 Account: {AD_ACCOUNT_ID}\n"
@@ -60,12 +75,15 @@ def format_report(data, balance):
         cpc = item.get("cpc", 0)
         spend = item.get("spend", 0)
 
+        purchase = get_purchase(item.get("actions"))
+
         text += f"📌 {item.get('campaign_name','-')}\n"
         text += f"Reach: {item.get('reach','-')}\n"
         text += f"Impression: {item.get('impressions','-')}\n"
         text += f"CTR: {ctr:.2f}%\n"
         text += f"CPC: {format_rp(cpc)}\n"
-        text += f"Spend: {format_rp(spend)}\n\n"
+        text += f"Spend: {format_rp(spend)}\n"
+        text += f"Purchase: {purchase}\n\n"
 
     return text
 
