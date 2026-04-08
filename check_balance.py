@@ -15,13 +15,16 @@ def main():
 
     data = {
         "chat_id": CHAT_ID,
-        "text": "🔥 TEST GITHUB MASUK"
+        "text": "🔥 TEST GITHUB → TELEGRAM BERHASIL!"
     }
 
     res = requests.post(url, data=data)
 
     print("STATUS:", res.status_code)
     print("RESPONSE:", res.text)
+
+    if res.status_code != 200:
+        raise Exception("Gagal kirim Telegram")
 
 if __name__ == "__main__":
     main()
