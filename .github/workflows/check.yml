@@ -22,7 +22,7 @@ jobs:
         run: pip install requests
 
       - name: Run script
-        run: python check_balance.py
+        run: python meta_report.py
         env:
           META_TOKEN: ${{ secrets.META_TOKEN }}
           AD_ACCOUNT_ID: ${{ secrets.AD_ACCOUNT_ID }}
