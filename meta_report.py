@@ -15,43 +15,11 @@ def format_rp(value):
         return "Rp0"
 
 
-def get_account_name():
-    url = f"https://graph.facebook.com/v18.0/{AD_ACCOUNT_ID}"
-    params = {
-        "fields": "name",
-        "access_token": ACCESS_TOKEN
-    }
-
-    res = requests.get(url, params=params).json()
-    print("ACCOUNT RESPONSE:", res)
-
-    if "error" in res:
-        return AD_ACCOUNT_ID
-
-    return res.get("name", AD_ACCOUNT_ID)
-
-
-def get_balance():
-    url = f"https://graph.facebook.com/v18.0/{AD_ACCOUNT_ID}"
-    params = {
-        "fields": "balance",
-        "access_token": ACCESS_TOKEN
-    }
-
-    res = requests.get(url, params=params).json()
-    print("BALANCE RESPONSE:", res)
-
-    if "error" in res:
-        return 0
-
-    return int(res.get("balance", 0)) / 100
-
-
 def get_insights():
     url = f"https://graph.facebook.com/v18.0/{AD_ACCOUNT_ID}/insights"
 
     params = {
-        "fields": "campaign_name,reach,impressions,ctr,cpc,spend,actions,action_values",
+        "fields": "campaign_name,reach,impressions,ctr,cpc,spend",
         "access_token": ACCESS_TOKEN,
         "date_preset": "today"
     }
@@ -62,78 +30,42 @@ def get_insights():
     return res.get("data", [])
 
 
-def get_purchase(actions):
-    total = 0
-    if not actions:
+def get_balance():
+    url = f"https://graph.facebook.com/v18.0/{AD_ACCOUNT_ID}"
+
+    params = {
+        "fields": "balance",
+        "access_token": ACCESS_TOKEN
+    }
+
+    res = requests.get(url, params=params).json()
+    print("BALANCE RESPONSE:", res)
+
+    if "balance" not in res:
         return 0
 
-    for act in actions:
-        if act.get("action_type") == "purchase":
-            total += float(act.get("value", 0))
-
-    return total
+    return int(res["balance"]) / 100
 
 
-def get_purchase_value(action_values):
-    total = 0
-    if not action_values:
-        return 0
-
-    for val in action_values:
-        if val.get("action_type") == "purchase":
-            total += float(val.get("value", 0))
-
-    return total
-
-
-def get_roas(spend, revenue):
-    if spend == 0:
-        return 0
-    return revenue / spend
-
-
-def format_report(data, balance, account_name):
+def format_report(data, balance):
     text = f"📊 META ADS REPORT HARI INI\n\n"
-    text += f"🏢 Account: {account_name}\n"
+    text += f"🏢 Account: {AD_ACCOUNT_ID}\n"
     text += f"💰 Saldo: {format_rp(balance)}\n\n"
 
     if not data:
         return text + "⚠️ Tidak ada data campaign"
 
-    total_spend = 0
-    total_purchase = 0
-    total_revenue = 0
-
     for item in data[:5]:
-        ctr = float(item.get("ctr") or 0)
-        cpc = float(item.get("cpc") or 0)
-        spend = float(item.get("spend") or 0)
-
-        purchase = get_purchase(item.get("actions"))
-        revenue = get_purchase_value(item.get("action_values"))
-        roas = get_roas(spend, revenue)
-
-        total_spend += spend
-        total_purchase += purchase
-        total_revenue += revenue
+        ctr = float(item.get("ctr", 0))
+        cpc = item.get("cpc", 0)
+        spend = item.get("spend", 0)
 
         text += f"📌 {item.get('campaign_name','-')}\n"
         text += f"Reach: {item.get('reach','-')}\n"
         text += f"Impression: {item.get('impressions','-')}\n"
         text += f"CTR: {ctr:.2f}%\n"
         text += f"CPC: {format_rp(cpc)}\n"
-        text += f"Spend: {format_rp(spend)}\n"
-        text += f"🛒 Purchase: {int(purchase)}\n"
-        text += f"💵 Revenue: {format_rp(revenue)}\n"
-        text += f"📈 ROAS: {roas:.2f}\n\n"
-
-    total_roas = get_roas(total_spend, total_revenue)
-
-    text += f"========== TOTAL ==========\n"
-    text += f"Spend: {format_rp(total_spend)}\n"
-    text += f"Purchase: {int(total_purchase)}\n"
-    text += f"Revenue: {format_rp(total_revenue)}\n"
-    text += f"ROAS: {total_roas:.2f}\n"
+        text += f"Spend: {format_rp(spend)}\n\n"
 
     return text
 
@@ -147,23 +79,18 @@ def send_telegram(msg):
     }
 
     res = requests.post(url, data=data)
-
-    print("TELEGRAM STATUS:", res.status_code)
-    print("TELEGRAM RESPONSE:", res.text)
+    print("TELEGRAM:", res.text)
 
 
 def main():
     print("SCRIPT START")
 
-    print("AD_ACCOUNT_ID:", AD_ACCOUNT_ID)
-
-    account_name = get_account_name()
-    balance = get_balance()
     insights = get_insights()
+    balance = get_balance()
 
-    report = format_report(insights, balance, account_name)
+    report = format_report(insights, balance)
 
-    print("FINAL REPORT:", report)
+    print("REPORT:", report)
 
     send_telegram(report)
 
