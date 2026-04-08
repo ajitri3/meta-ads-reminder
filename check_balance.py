@@ -12,7 +12,7 @@ def get_insights():
     url = f"https://graph.facebook.com/v18.0/{AD_ACCOUNT_ID}/insights"
 
     params = {
-        "fields": "campaign_name,reach,impressions,ctr,cpc,cost_per_result",
+        "fields": "campaign_name,reach,impressions,ctr,cpc",
         "access_token": ACCESS_TOKEN,
         "date_preset": "today"
     }
@@ -21,10 +21,7 @@ def get_insights():
 
     print("META RESPONSE:", res)
 
-    if "data" not in res:
-        raise Exception("Gagal ambil data Meta")
-
-    return res["data"]
+    return res.get("data", [])
 
 
 def get_balance():
@@ -48,13 +45,12 @@ def get_balance():
 def format_report(data, balance):
     text = f"📊 META ADS REPORT\n\n💰 Saldo: Rp{balance:,.0f}\n\n"
 
-    for item in data[:5]:  # ambil max 5 campaign
+    for item in data[:5]:
         text += f"📌 {item.get('campaign_name','-')}\n"
         text += f"Reach: {item.get('reach','-')}\n"
         text += f"Impression: {item.get('impressions','-')}\n"
         text += f"CTR: {item.get('ctr','-')}%\n"
-        text += f"CPC: Rp{item.get('cpc','-')}\n"
-        text += f"Cost/Result: Rp{item.get('cost_per_result','-')}\n\n"
+        text += f"CPC: Rp{item.get('cpc','-')}\n\n"
 
     return text
 
