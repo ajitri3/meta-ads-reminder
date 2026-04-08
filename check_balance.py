@@ -1,6 +1,8 @@
 import requests
 import os
 
+print("🚀 META REPORT RUNNING...")
+
 ACCESS_TOKEN = os.getenv("META_TOKEN")
 AD_ACCOUNT_ID = os.getenv("AD_ACCOUNT_ID")
 
@@ -12,7 +14,7 @@ def get_insights():
     url = f"https://graph.facebook.com/v18.0/{AD_ACCOUNT_ID}/insights"
 
     params = {
-        "fields": "campaign_name,reach,impressions,ctr,cpc",
+        "fields": "campaign_name,reach,impressions,ctr,cpc,spend",
         "access_token": ACCESS_TOKEN,
         "date_preset": "today"
     }
@@ -43,14 +45,19 @@ def get_balance():
 
 
 def format_report(data, balance):
-    text = f"📊 META ADS REPORT\n\n💰 Saldo: Rp{balance:,.0f}\n\n"
+    text = f"📊 META ADS REPORT HARI INI\n\n"
+    text += f"💰 Saldo: Rp{balance:,.0f}\n\n"
+
+    if not data:
+        return text + "⚠️ Tidak ada data campaign"
 
     for item in data[:5]:
         text += f"📌 {item.get('campaign_name','-')}\n"
         text += f"Reach: {item.get('reach','-')}\n"
         text += f"Impression: {item.get('impressions','-')}\n"
         text += f"CTR: {item.get('ctr','-')}%\n"
-        text += f"CPC: Rp{item.get('cpc','-')}\n\n"
+        text += f"CPC: Rp{item.get('cpc','-')}\n"
+        text += f"Spend: Rp{item.get('spend','-')}\n\n"
 
     return text
 
@@ -63,14 +70,27 @@ def send_telegram(msg):
         "text": msg
     }
 
-    requests.post(url, data=data)
+    res = requests.post(url, data=data)
+
+    print("TELEGRAM STATUS:", res.status_code)
+    print("TELEGRAM RESPONSE:", res.text)
 
 
 def main():
+    if not ACCESS_TOKEN or not AD_ACCOUNT_ID:
+        print("❌ META TOKEN / AD ACCOUNT ID KOSONG")
+        return
+
+    if not TELEGRAM_TOKEN or not CHAT_ID:
+        print("❌ TELEGRAM TOKEN / CHAT ID KOSONG")
+        return
+
     insights = get_insights()
     balance = get_balance()
 
     report = format_report(insights, balance)
+
+    print("FINAL REPORT:\n", report)
 
     send_telegram(report)
 
