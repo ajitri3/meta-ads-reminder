@@ -1,13 +1,17 @@
 import requests
 import os
-print("AD_ACCOUNT_ID:", AD_ACCOUNT_ID)
+
+# ambil dari GitHub Secrets
 ACCESS_TOKEN = os.getenv("META_TOKEN")
 AD_ACCOUNT_ID = os.getenv("AD_ACCOUNT_ID")
-
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
 THRESHOLD = 200000
+
+# DEBUG (biar kita lihat di log GitHub)
+print("AD_ACCOUNT_ID:", AD_ACCOUNT_ID)
+print("TOKEN ADA:", "YES" if ACCESS_TOKEN else "NO")
 
 
 def get_balance():
@@ -18,9 +22,9 @@ def get_balance():
     }
 
     res = requests.get(url, params=params).json()
+    print("API RESPONSE:", res)
 
     if "balance" not in res:
-        print("ERROR RESPONSE:", res)
         raise Exception("Balance not found")
 
     return int(res["balance"]) / 100
@@ -37,7 +41,7 @@ def send_telegram(msg):
 
 def main():
     balance = get_balance()
-    print("Balance:", balance)  # debug biar keliatan di GitHub
+    print("Balance:", balance)
 
     if balance < THRESHOLD:
         send_telegram(f"⚠️ Saldo Meta Ads tinggal Rp{balance:,.0f}")
