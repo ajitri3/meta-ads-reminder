@@ -3,7 +3,7 @@ name: Meta Ads Reminder
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 0 * * *'  # Jam 7 pagi WIB (UTC 00:00)
+    - cron: '0 0 * * *'
 
 jobs:
   run-script:
